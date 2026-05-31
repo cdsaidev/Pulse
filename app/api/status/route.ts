@@ -2,19 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ResendService } from '@/lib/resend';
 import { prisma } from '@/lib/prisma';
 
-async function checkDatabase(): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return false;
+async function checkDatabase(): Promise<{ connected: boolean; error?: string }> {
+  if (!process.env.DATABASE_URL) {
+    return { connected: false, error: "DATABASE_URL is not set" };
+  }
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return true;
-  } catch {
-    return false;
+    return { connected: true };
+  } catch (error) {
+    return {
+      connected: false,
+      error: error instanceof Error ? error.message : "Database connection failed",
+    };
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const [apiStatus, dbConnected] = await Promise.all([
+    const [apiStatus, dbStatus] = await Promise.all([
       ResendService.checkApiStatus(),
       checkDatabase(),
     ]);
@@ -23,7 +28,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         apiConnected: apiStatus,
-        dbConnected,
+        dbConnected: dbStatus.connected,
+        dbError: dbStatus.error,
         hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
@@ -38,6 +44,7 @@ export async function GET(request: NextRequest) {
         data: {
           apiConnected: false,
           dbConnected: false,
+          dbError: undefined,
           hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
           timestamp: new Date().toISOString(),
           environment: process.env.NODE_ENV,
