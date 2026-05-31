@@ -99,55 +99,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Prepare environment
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_POSTGRES_URL: ${{ secrets.DATABASE_POSTGRES_URL }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
-        run: |
-          vercel env pull .env --environment=production --yes --token=${{ secrets.VERCEL_TOKEN }}
-
-          if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_POSTGRES_URL" ]; then
-            echo "::error::Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
-            exit 1
-          fi
-
-          {
-            grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL|RESEND_API_KEY|RESEND_AUDIENCE_ID)=' .env 2>/dev/null || true
-            printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL"
-            [ -n "$RESEND_API_KEY" ] && printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY"
-            [ -n "$RESEND_AUDIENCE_ID" ] && printf 'RESEND_AUDIENCE_ID=%s\n' "$RESEND_AUDIENCE_ID"
-          } > .env.new
-          mv .env.new .env
-
-      - name: Run database migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_POSTGRES_URL }}
-        run: pnpm exec prisma migrate deploy
-
-      - name: Build project artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
       - name: Deploy to Vercel (Production)
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
