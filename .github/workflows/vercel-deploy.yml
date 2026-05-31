@@ -51,11 +51,14 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${POSTGRES_PRISMA_URL:-}" ] && [ -n "${POSTGRES_URL:-}" ]; then
-            echo "POSTGRES_PRISMA_URL=$POSTGRES_URL" >> .env
+          PRISMA_URL="${DATABASE_PRISMA_DATABASE_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}"
+          DIRECT_URL="${DATABASE_POSTGRES_URL:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-}}}"
+
+          if [ -n "$PRISMA_URL" ]; then
+            echo "DATABASE_PRISMA_DATABASE_URL=$PRISMA_URL" >> .env
           fi
-          if [ -z "${POSTGRES_URL_NON_POOLING:-}" ] && [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "POSTGRES_URL_NON_POOLING=$DATABASE_URL_UNPOOLED" >> .env
+          if [ -n "$DIRECT_URL" ]; then
+            echo "DATABASE_POSTGRES_URL=$DIRECT_URL" >> .env
           fi
 
           set -a
@@ -63,9 +66,8 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${POSTGRES_PRISMA_URL:-}" ] || [ -z "${POSTGRES_URL_NON_POOLING:-}" ]; then
-            echo "Missing POSTGRES_PRISMA_URL or POSTGRES_URL_NON_POOLING."
-            echo "Connect Vercel Postgres: Storage → Postgres → Connect Project."
+          if [ -z "${DATABASE_PRISMA_DATABASE_URL:-}" ] || [ -z "${DATABASE_POSTGRES_URL:-}" ]; then
+            echo "Missing DATABASE_PRISMA_DATABASE_URL or DATABASE_POSTGRES_URL."
             cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
             exit 1
           fi
@@ -132,11 +134,14 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${POSTGRES_PRISMA_URL:-}" ] && [ -n "${POSTGRES_URL:-}" ]; then
-            echo "POSTGRES_PRISMA_URL=$POSTGRES_URL" >> .env
+          PRISMA_URL="${DATABASE_PRISMA_DATABASE_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}"
+          DIRECT_URL="${DATABASE_POSTGRES_URL:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-}}}"
+
+          if [ -n "$PRISMA_URL" ]; then
+            echo "DATABASE_PRISMA_DATABASE_URL=$PRISMA_URL" >> .env
           fi
-          if [ -z "${POSTGRES_URL_NON_POOLING:-}" ] && [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "POSTGRES_URL_NON_POOLING=$DATABASE_URL_UNPOOLED" >> .env
+          if [ -n "$DIRECT_URL" ]; then
+            echo "DATABASE_POSTGRES_URL=$DIRECT_URL" >> .env
           fi
 
           set -a
@@ -144,9 +149,8 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${POSTGRES_PRISMA_URL:-}" ] || [ -z "${POSTGRES_URL_NON_POOLING:-}" ]; then
-            echo "Missing POSTGRES_PRISMA_URL or POSTGRES_URL_NON_POOLING."
-            echo "Connect Vercel Postgres: Storage → Postgres → Connect Project."
+          if [ -z "${DATABASE_PRISMA_DATABASE_URL:-}" ] || [ -z "${DATABASE_POSTGRES_URL:-}" ]; then
+            echo "Missing DATABASE_PRISMA_DATABASE_URL or DATABASE_POSTGRES_URL."
             cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
             exit 1
           fi
