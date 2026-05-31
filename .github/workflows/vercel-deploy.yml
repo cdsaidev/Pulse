@@ -42,29 +42,20 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Prepare database environment
+      - name: Prepare environment
         run: |
-          ENV_FILE=".vercel/.env.preview.local"
-          if [ ! -f "$ENV_FILE" ]; then
-            echo "Missing $ENV_FILE after vercel pull."
-            ls -la .vercel/ || true
-            exit 1
-          fi
+          vercel env pull .env --environment=preview --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-          cp "$ENV_FILE" .env
           set -a
           # shellcheck disable=SC1091
           . ./.env
           set +a
 
-          if [ -n "${POSTGRES_URL:-}" ] && [ -z "${DATABASE_URL:-}" ]; then
-            echo "DATABASE_URL=$POSTGRES_URL" >> .env
+          if [ -z "${POSTGRES_PRISMA_URL:-}" ] && [ -n "${POSTGRES_URL:-}" ]; then
+            echo "POSTGRES_PRISMA_URL=$POSTGRES_URL" >> .env
           fi
-          if [ -n "${POSTGRES_PRISMA_URL:-}" ] && [ -z "${DATABASE_URL:-}" ]; then
-            echo "DATABASE_URL=$POSTGRES_PRISMA_URL" >> .env
-          fi
-          if [ -n "${POSTGRES_URL_NON_POOLING:-}" ] && [ -z "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "DATABASE_URL_UNPOOLED=$POSTGRES_URL_NON_POOLING" >> .env
+          if [ -z "${POSTGRES_URL_NON_POOLING:-}" ] && [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
+            echo "POSTGRES_URL_NON_POOLING=$DATABASE_URL_UNPOOLED" >> .env
           fi
 
           set -a
@@ -72,11 +63,15 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${DATABASE_URL:-}" ] || [ -z "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "Missing DATABASE_URL or DATABASE_URL_UNPOOLED."
-            echo "Connect Vercel Postgres to this project in Storage → Postgres → Connect Project."
+          if [ -z "${POSTGRES_PRISMA_URL:-}" ] || [ -z "${POSTGRES_URL_NON_POOLING:-}" ]; then
+            echo "Missing POSTGRES_PRISMA_URL or POSTGRES_URL_NON_POOLING."
+            echo "Connect Vercel Postgres: Storage → Postgres → Connect Project."
+            cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
             exit 1
           fi
+
+      - name: Run database migrations
+        run: pnpm exec prisma migrate deploy
 
       - name: Build project artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
@@ -128,29 +123,20 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Prepare database environment
+      - name: Prepare environment
         run: |
-          ENV_FILE=".vercel/.env.production.local"
-          if [ ! -f "$ENV_FILE" ]; then
-            echo "Missing $ENV_FILE after vercel pull."
-            ls -la .vercel/ || true
-            exit 1
-          fi
+          vercel env pull .env --environment=production --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-          cp "$ENV_FILE" .env
           set -a
           # shellcheck disable=SC1091
           . ./.env
           set +a
 
-          if [ -n "${POSTGRES_URL:-}" ] && [ -z "${DATABASE_URL:-}" ]; then
-            echo "DATABASE_URL=$POSTGRES_URL" >> .env
+          if [ -z "${POSTGRES_PRISMA_URL:-}" ] && [ -n "${POSTGRES_URL:-}" ]; then
+            echo "POSTGRES_PRISMA_URL=$POSTGRES_URL" >> .env
           fi
-          if [ -n "${POSTGRES_PRISMA_URL:-}" ] && [ -z "${DATABASE_URL:-}" ]; then
-            echo "DATABASE_URL=$POSTGRES_PRISMA_URL" >> .env
-          fi
-          if [ -n "${POSTGRES_URL_NON_POOLING:-}" ] && [ -z "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "DATABASE_URL_UNPOOLED=$POSTGRES_URL_NON_POOLING" >> .env
+          if [ -z "${POSTGRES_URL_NON_POOLING:-}" ] && [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
+            echo "POSTGRES_URL_NON_POOLING=$DATABASE_URL_UNPOOLED" >> .env
           fi
 
           set -a
@@ -158,11 +144,15 @@ jobs:
           . ./.env
           set +a
 
-          if [ -z "${DATABASE_URL:-}" ] || [ -z "${DATABASE_URL_UNPOOLED:-}" ]; then
-            echo "Missing DATABASE_URL or DATABASE_URL_UNPOOLED."
-            echo "Connect Vercel Postgres to this project in Storage → Postgres → Connect Project."
+          if [ -z "${POSTGRES_PRISMA_URL:-}" ] || [ -z "${POSTGRES_URL_NON_POOLING:-}" ]; then
+            echo "Missing POSTGRES_PRISMA_URL or POSTGRES_URL_NON_POOLING."
+            echo "Connect Vercel Postgres: Storage → Postgres → Connect Project."
+            cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
             exit 1
           fi
+
+      - name: Run database migrations
+        run: pnpm exec prisma migrate deploy
 
       - name: Build project artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
