@@ -3,7 +3,7 @@ import { ResendService } from '@/lib/resend';
 import { prisma } from '@/lib/prisma';
 
 async function checkDatabase(): Promise<boolean> {
-  if (!process.env.DATABASE_PRISMA_DATABASE_URL && !process.env.POSTGRES_PRISMA_URL && !process.env.DATABASE_URL) return false;
+  if (!process.env.DATABASE_URL) return false;
   try {
     await prisma.$queryRaw`SELECT 1`;
     return true;
@@ -24,11 +24,7 @@ export async function GET(request: NextRequest) {
       data: {
         apiConnected: apiStatus,
         dbConnected,
-        hasDatabaseUrl: Boolean(
-          process.env.DATABASE_PRISMA_DATABASE_URL ||
-            process.env.POSTGRES_PRISMA_URL ||
-            process.env.DATABASE_URL
-        ),
+        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
       },
@@ -42,11 +38,7 @@ export async function GET(request: NextRequest) {
         data: {
           apiConnected: false,
           dbConnected: false,
-          hasDatabaseUrl: Boolean(
-          process.env.DATABASE_PRISMA_DATABASE_URL ||
-            process.env.POSTGRES_PRISMA_URL ||
-            process.env.DATABASE_URL
-        ),
+          hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
           timestamp: new Date().toISOString(),
           environment: process.env.NODE_ENV,
         }

@@ -43,34 +43,20 @@ jobs:
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Prepare environment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POSTGRES_URL: ${{ secrets.DATABASE_POSTGRES_URL }}
         run: |
           vercel env pull .env --environment=preview --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-          set -a
-          # shellcheck disable=SC1091
-          . ./.env
-          set +a
-
-          PRISMA_URL="${DATABASE_PRISMA_DATABASE_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}"
-          DIRECT_URL="${DATABASE_POSTGRES_URL:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-}}}"
-
-          if [ -n "$PRISMA_URL" ]; then
-            echo "DATABASE_PRISMA_DATABASE_URL=$PRISMA_URL" >> .env
-          fi
-          if [ -n "$DIRECT_URL" ]; then
-            echo "DATABASE_POSTGRES_URL=$DIRECT_URL" >> .env
-          fi
-
-          set -a
-          # shellcheck disable=SC1091
-          . ./.env
-          set +a
-
-          if [ -z "${DATABASE_PRISMA_DATABASE_URL:-}" ] || [ -z "${DATABASE_POSTGRES_URL:-}" ]; then
-            echo "Missing DATABASE_PRISMA_DATABASE_URL or DATABASE_POSTGRES_URL."
-            cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
+          if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_POSTGRES_URL" ]; then
+            echo "Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
             exit 1
           fi
+
+          grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL)=' .env > .env.tmp
+          mv .env.tmp .env
+          printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL" >> .env
 
       - name: Run database migrations
         run: pnpm exec prisma migrate deploy
@@ -126,34 +112,20 @@ jobs:
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Prepare environment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POSTGRES_URL: ${{ secrets.DATABASE_POSTGRES_URL }}
         run: |
           vercel env pull .env --environment=production --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-          set -a
-          # shellcheck disable=SC1091
-          . ./.env
-          set +a
-
-          PRISMA_URL="${DATABASE_PRISMA_DATABASE_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}"
-          DIRECT_URL="${DATABASE_POSTGRES_URL:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-}}}"
-
-          if [ -n "$PRISMA_URL" ]; then
-            echo "DATABASE_PRISMA_DATABASE_URL=$PRISMA_URL" >> .env
-          fi
-          if [ -n "$DIRECT_URL" ]; then
-            echo "DATABASE_POSTGRES_URL=$DIRECT_URL" >> .env
-          fi
-
-          set -a
-          # shellcheck disable=SC1091
-          . ./.env
-          set +a
-
-          if [ -z "${DATABASE_PRISMA_DATABASE_URL:-}" ] || [ -z "${DATABASE_POSTGRES_URL:-}" ]; then
-            echo "Missing DATABASE_PRISMA_DATABASE_URL or DATABASE_POSTGRES_URL."
-            cut -d= -f1 .env | grep -Ei 'POSTGRES|DATABASE' || true
+          if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_POSTGRES_URL" ]; then
+            echo "Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
             exit 1
           fi
+
+          grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL)=' .env > .env.tmp
+          mv .env.tmp .env
+          printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL" >> .env
 
       - name: Run database migrations
         run: pnpm exec prisma migrate deploy
