@@ -52,15 +52,17 @@ jobs:
           vercel env pull .env --environment=preview --yes --token=${{ secrets.VERCEL_TOKEN }}
 
           if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_POSTGRES_URL" ]; then
-            echo "Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
+            echo "::error::Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
             exit 1
           fi
 
-          grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL|RESEND_API_KEY|RESEND_AUDIENCE_ID)=' .env > .env.tmp
-          mv .env.tmp .env
-          printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL" >> .env
-          [ -n "$RESEND_API_KEY" ] && printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY" >> .env
-          [ -n "$RESEND_AUDIENCE_ID" ] && printf 'RESEND_AUDIENCE_ID=%s\n' "$RESEND_AUDIENCE_ID" >> .env
+          {
+            grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL|RESEND_API_KEY|RESEND_AUDIENCE_ID)=' .env 2>/dev/null || true
+            printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL"
+            [ -n "$RESEND_API_KEY" ] && printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY"
+            [ -n "$RESEND_AUDIENCE_ID" ] && printf 'RESEND_AUDIENCE_ID=%s\n' "$RESEND_AUDIENCE_ID"
+          } > .env.new
+          mv .env.new .env
 
       - name: Run database migrations
         run: pnpm exec prisma migrate deploy
@@ -125,15 +127,17 @@ jobs:
           vercel env pull .env --environment=production --yes --token=${{ secrets.VERCEL_TOKEN }}
 
           if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_POSTGRES_URL" ]; then
-            echo "Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
+            echo "::error::Add DATABASE_URL and DATABASE_POSTGRES_URL as GitHub Actions secrets."
             exit 1
           fi
 
-          grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL|RESEND_API_KEY|RESEND_AUDIENCE_ID)=' .env > .env.tmp
-          mv .env.tmp .env
-          printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL" >> .env
-          [ -n "$RESEND_API_KEY" ] && printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY" >> .env
-          [ -n "$RESEND_AUDIENCE_ID" ] && printf 'RESEND_AUDIENCE_ID=%s\n' "$RESEND_AUDIENCE_ID" >> .env
+          {
+            grep -v -E '^(DATABASE_URL|DATABASE_POSTGRES_URL|RESEND_API_KEY|RESEND_AUDIENCE_ID)=' .env 2>/dev/null || true
+            printf 'DATABASE_URL=%s\nDATABASE_POSTGRES_URL=%s\n' "$DATABASE_URL" "$DATABASE_POSTGRES_URL"
+            [ -n "$RESEND_API_KEY" ] && printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY"
+            [ -n "$RESEND_AUDIENCE_ID" ] && printf 'RESEND_AUDIENCE_ID=%s\n' "$RESEND_AUDIENCE_ID"
+          } > .env.new
+          mv .env.new .env
 
       - name: Run database migrations
         run: pnpm exec prisma migrate deploy
