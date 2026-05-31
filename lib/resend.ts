@@ -1,7 +1,17 @@
 import { Resend } from "resend";
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient: Resend | undefined;
+
+function getResendClient(): Resend {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+  if (!resendClient) {
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
 
 export interface EmailData {
   to: string | string[];
@@ -67,7 +77,7 @@ export class ResendService {
         throw new Error("RESEND_API_KEY is not configured");
       }
 
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await getResendClient().emails.send({
         from: emailData.from || "Pulse@chris.tech",
         to: emailData.to,
         subject: emailData.subject,
@@ -193,7 +203,7 @@ export class ResendService {
         throw new Error("RESEND_AUDIENCE_ID is not configured");
       }
 
-      const { data, error } = await resend.contacts.list({
+      const { data, error } = await getResendClient().contacts.list({
         audienceId: process.env.RESEND_AUDIENCE_ID,
       });
 
@@ -245,7 +255,7 @@ export class ResendService {
         throw new Error("RESEND_API_KEY is not configured");
       }
 
-      const { data, error } = await resend.audiences.list();
+      const { data, error } = await getResendClient().audiences.list();
 
       if (error) {
         console.error("Resend API error:", error);
@@ -291,7 +301,7 @@ export class ResendService {
         throw new Error("RESEND_AUDIENCE_ID is not configured");
       }
 
-      const { data, error } = await resend.contacts.create({
+      const { data, error } = await getResendClient().contacts.create({
         email,
         firstName,
         lastName,
@@ -333,7 +343,7 @@ export class ResendService {
         throw new Error("RESEND_AUDIENCE_ID is not configured");
       }
 
-      const { data, error } = await resend.contacts.remove({
+      const { data, error } = await getResendClient().contacts.remove({
         id: contactId,
         audienceId: process.env.RESEND_AUDIENCE_ID,
       });
@@ -387,5 +397,3 @@ export class ResendService {
     }
   }
 }
-
-export default resend;
