@@ -8,6 +8,7 @@ export async function GET() {
     });
     return NextResponse.json({ templates });
   } catch (error) {
+    console.error("Failed to fetch templates:", error);
     return NextResponse.json(
       { error: "Failed to fetch templates" },
       { status: 500 }
